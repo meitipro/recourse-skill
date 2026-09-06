@@ -1,8 +1,8 @@
 import { createMcpHandler } from "mcp-handler";
-// The SDK's registerTool types its input schema against zod v4. The pinned
-// zod 3.25 release ships v4 under this subpath, so this is the import that
-// typechecks; a bare "zod" import gives v3 types and fails every tool.
-import { z } from "zod/v4";
+// The SDK's registerTool types its input schema against zod 4. The 3.x line,
+// even through its zod/v4 subpath, lacks the internals it checks for, so this
+// project pins zod 4.
+import { z } from "zod";
 
 import { ADDRESSES, DISPUTE, ESCROW, STATUS, VERDICT, readJson, toCitation, toPid } from "@/lib/chain";
 import { checkPromise } from "@/lib/linter";
