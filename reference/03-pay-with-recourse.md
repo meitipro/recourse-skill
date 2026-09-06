@@ -7,10 +7,20 @@ on the happy case, so it adds no latency to an honest sale.
 
 ## What you need
 
-- A funded studionet account. `sim_fundAccount` is a programmatic faucet:
-  `{"method": "sim_fundAccount", "params": ["0x<you>", 100000000000000000000]}`
-  against `https://studio.genlayer.com/api`, amount as a JSON number in wei.
-  Read your balance before and after; the faucet's own reply is not evidence.
+- A funded studionet account. The faucet is programmatic, and the SDK's
+  wrapper is the way to call it: a raw JSON-RPC `sim_fundAccount` from
+  `urllib` came back `403 Forbidden` while this file was being verified.
+  Read your balance before and after; the faucet's own reply is not evidence,
+  it has been seen crediting and then erroring.
+
+  ```python
+  client.fund_account(buyer.address, 100 * 10**18)     # amount in wei
+  print(client.get_balance(buyer.address) / 10**18)      # what actually landed
+  ```
+
+  Only payable calls need GEN. Studio prices gas at zero, so registering a
+  seller and recording a response work from an empty account; `pay` and
+  `open_dispute` do not.
 - The seller's address and their promise (`get_seller`).
 - A request string that says what you are asking for. It is frozen on chain
   and the judge reads it, so make it the actual request.

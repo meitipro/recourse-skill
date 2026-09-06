@@ -46,16 +46,20 @@ Write promises that settle the question. `02-write-a-promise.md` is how.
 
 ## Read the live state
 
-Read only, no key, no cost. Python with `genlayer_py`:
+Read only, no cost. Python with `genlayer_py`. One thing the SDK insists on:
+a read needs a sender address, so a client with no account raises
+`No account provided and no account is connected` on its first read. Give it
+a throwaway key. It holds nothing, is never stored, and is never used to sign
+a write; it exists because the SDK wants a `from`.
 
 ```python
 import json
-from genlayer_py import create_client, studionet
+from genlayer_py import create_account, create_client, studionet
 
 ESCROW = "0x5125De939F7373eAE741B133FB32B7E9915C8F78"
 DISPUTE = "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4"
 
-client = create_client(chain=studionet)           # no account: cannot write
+client = create_client(chain=studionet, account=create_account())   # throwaway, reads only
 
 stats = json.loads(client.read_contract(ESCROW, "stats", []))
 # {"bond_amount": "1000000000000000000", "held": "...", "payments": 7, "window_seconds": 300, ...}

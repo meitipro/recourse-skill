@@ -17,14 +17,16 @@ you want to know is whether the money moved.
 
 ```python
 import json, time
-from genlayer_py import create_client, studionet
+from genlayer_py import create_account, create_client, studionet
 
 ESCROW = "0x5125De939F7373eAE741B133FB32B7E9915C8F78"
 DISPUTE = "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4"
 STATUS = ["open", "withdrawn", "disputed", "resolved"]
 VERDICT = ["pending", "honored", "not_honored", "unclear"]
 
-client = create_client(chain=studionet)      # reading needs no account
+# The SDK wants a sender address even for a read. A throwaway key holds
+# nothing and signs nothing; your real key works too and is never needed here.
+client = create_client(chain=studionet, account=create_account())
 
 deadline = time.time() + 240
 while time.time() < deadline:
