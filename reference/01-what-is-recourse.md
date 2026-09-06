@@ -66,3 +66,31 @@ recent = json.loads(client.read_contract(DISPUTE, "recent_verdicts", [10]))
 
 Studio allows about thirty requests a minute for the whole node. Read pages
 (`recent_rows`, `recent_verdicts`), not rows.
+
+## Studio drops connections, and the SDK does not retry
+
+`genlayer_py` makes one attempt per call and turns a dropped TLS handshake into
+a hard failure. Against studionet that happens often enough that a script
+following these files verbatim died on its first read while this file was
+being verified. Mount a retrying session under the SDK once, before any call:
+
+```python
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from genlayer_py.provider import provider as _provider
+
+session = requests.Session()
+session.mount("https://", HTTPAdapter(max_retries=Retry(
+    total=12, connect=12, read=6, backoff_factor=0.7,
+    status_forcelist=[408, 429, 500, 502, 503, 504],
+    allowed_methods=frozenset(["POST", "GET"]), raise_on_status=False,
+)))
+session.exceptions = requests.exceptions      # the provider looks for this on the module it was given
+_provider.requests = session
+```
+
+Read retries are safe. A write retried at this layer re-sends the identical
+signed bytes, which the node de-duplicates; a write retried by calling
+`write_contract` again is a second transaction, because the SDK fetches a new
+nonce inside every call. Never wrap `write_contract` in a plain retry loop.

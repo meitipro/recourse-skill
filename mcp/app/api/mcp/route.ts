@@ -1,4 +1,11 @@
+import dns from "node:dns";
 import { createMcpHandler } from "mcp-handler";
+
+// GitHub's raw host answers on IPv6 and some networks route it nowhere, which
+// surfaces inside this process as UND_ERR_CONNECT_TIMEOUT on a fetch that a
+// bare node process on the same machine completes. Prefer IPv4; harmless
+// where IPv6 works.
+dns.setDefaultResultOrder("ipv4first");
 // The SDK's registerTool types its input schema against zod 4. The 3.x line,
 // even through its zod/v4 subpath, lacks the internals it checks for, so this
 // project pins zod 4.
@@ -48,7 +55,14 @@ const cache = new Map<string, { at: number; body: string; status: number }>();
 async function fetchText(url: string): Promise<{ status: number; body: string }> {
   const hit = cache.get(url);
   if (hit && Date.now() - hit.at < CACHE_MS) return { status: hit.status, body: hit.body };
-  const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(15_000) });
+  let response: Response;
+  try {
+    response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(15_000) });
+  } catch (error) {
+    // "fetch failed" on its own says nothing. The cause does.
+    const cause = (error as { cause?: { code?: string; message?: string } }).cause;
+    throw new Error(`${(error as Error).message}: ${cause?.code || cause?.message || "no cause given"}`);
+  }
   const body = await response.text();
   cache.set(url, { at: Date.now(), body, status: response.status });
   return { status: response.status, body };

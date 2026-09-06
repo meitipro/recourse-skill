@@ -15,6 +15,10 @@ on the happy case, so it adds no latency to an honest sale.
 - A request string that says what you are asking for. It is frozen on chain
   and the judge reads it, so make it the actual request.
 
+Before the first call, mount the retrying session from
+`01-what-is-recourse.md` under the SDK. Without it a dropped handshake, which
+studionet produces routinely, fails the whole script.
+
 ## The call
 
 `pay(seller: str, request: str) -> str`, payable. The return value is the
