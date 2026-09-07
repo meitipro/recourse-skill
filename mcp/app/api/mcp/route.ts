@@ -1,18 +1,21 @@
 import dns from "node:dns";
 import { createMcpHandler } from "mcp-handler";
+// The SDK's registerTool types its input schema against zod 4. The 3.x line,
+// even through its zod/v4 subpath, lacks the internals it checks for, so this
+// project pins zod 4.
+import { z } from "zod";
+
+import {
+  ADDRESSES, NETWORKS, STATUS, VERDICT, deployment, deployments, readJson, resolveNetwork, toCitation, toPid,
+} from "@/lib/chain";
+import type { NetworkName } from "@/lib/chain";
+import { checkPromise } from "@/lib/linter";
 
 // GitHub's raw host answers on IPv6 and some networks route it nowhere, which
 // surfaces inside this process as UND_ERR_CONNECT_TIMEOUT on a fetch that a
 // bare node process on the same machine completes. Prefer IPv4; harmless
 // where IPv6 works.
 dns.setDefaultResultOrder("ipv4first");
-// The SDK's registerTool types its input schema against zod 4. The 3.x line,
-// even through its zod/v4 subpath, lacks the internals it checks for, so this
-// project pins zod 4.
-import { z } from "zod";
-
-import { ADDRESSES, DISPUTE, ESCROW, STATUS, VERDICT, readJson, toCitation, toPid } from "@/lib/chain";
-import { checkPromise } from "@/lib/linter";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -20,9 +23,13 @@ export const maxDuration = 60;
 /**
  * Five read only tools. Paying, disputing, withdrawing and signing are
  * deliberately not here: the MCP advises, the agent's own wallet acts. The
- * chain client behind these has no account (lib/chain.ts), and
+ * chain clients behind these have no account (lib/chain.ts), and
  * test/readonly.test.ts asserts that against the object rather than trusting
  * this comment.
+ *
+ * The same frozen bytes are deployed once per network. Every chain reading
+ * tool takes an optional `network`; unset, it is bradbury when bradbury has a
+ * deployment, because bradbury persists, else whatever does.
  */
 
 const SKILL_RAW = "https://raw.githubusercontent.com/meitipro/recourse-skill/main/reference/";
@@ -75,6 +82,11 @@ function text(payload: unknown) {
 function failure(message: string) {
   return { isError: true, ...text({ error: message }) };
 }
+
+const networkParam = z
+  .enum(NETWORKS as [NetworkName, ...NetworkName[]])
+  .optional()
+  .describe("studionet or bradbury. Unset: bradbury when deployed there, because it persists");
 
 type Payment = {
   pid: string; buyer: string; seller: string; amount: string; bond: string;
@@ -138,28 +150,32 @@ const handler = createMcpHandler(
       {
         title: "One adjudicated case",
         description:
-          "The frozen strings, the verdict, the reason and the timings for one payment. " +
+          "The frozen strings, the verdict, the reason and the timings for one payment on one network. " +
           "Takes p-000043 or the citation RC-2026-0043. A payment that was never disputed has no case and says so.",
-        inputSchema: { case_id: z.string().describe("p-000043 or RC-2026-0043") },
+        inputSchema: { case_id: z.string().describe("p-000043 or RC-2026-0043"), network: networkParam },
       },
-      async ({ case_id }) => {
+      async ({ case_id, network: requested }) => {
         let pid: string;
+        let network: NetworkName;
         try {
           pid = toPid(case_id);
+          network = resolveNetwork(requested);
         } catch (error) {
           return failure(String((error as Error).message));
         }
+        const where = deployment(network);
         try {
-          const payment = await readJson<Payment>(ESCROW, "get_payment", [pid]);
+          const payment = await readJson<Payment>(network, where.escrow, "get_payment", [pid]);
           let decided: Case | null = null;
           if (payment.status === 2 || payment.status === 3) {
             try {
-              decided = await readJson<Case>(DISPUTE, "get_case", [pid]);
+              decided = await readJson<Case>(network, where.dispute, "get_case", [pid]);
             } catch {
               decided = null;
             }
           }
           return text({
+            network,
             pid,
             citation: decided ? toCitation(pid, decided.decided_at) : null,
             status: STATUS[payment.status] ?? payment.status,
@@ -172,10 +188,10 @@ const handler = createMcpHandler(
                   : "verdict written on acceptance; money moved when status became resolved",
             payment,
             case: decided,
-            explorer: ADDRESSES.explorer,
+            explorer: where.explorer,
           });
         } catch (error) {
-          return failure(`could not read ${pid}: ${String(error).slice(0, 160)}`);
+          return failure(`could not read ${pid} on ${network}: ${String(error).slice(0, 160)}`);
         }
       },
     );
@@ -184,21 +200,28 @@ const handler = createMcpHandler(
       "recourse_seller_record",
       {
         title: "A seller's public record",
-        description: "The promise, whether it is active and judgeable, payments taken, disputes upheld against it, and payments still live.",
-        inputSchema: { address: z.string().regex(/^0x[0-9a-fA-F]{40}$/).describe("The seller's address") },
+        description: "The promise, whether it is active and judgeable, payments taken, disputes upheld against it, and payments still live, on one network.",
+        inputSchema: { address: z.string().regex(/^0x[0-9a-fA-F]{40}$/).describe("The seller's address"), network: networkParam },
       },
-      async ({ address }) => {
+      async ({ address, network: requested }) => {
+        let network: NetworkName;
         try {
-          const seller = await readJson<Seller>(ESCROW, "get_seller", [address]);
+          network = resolveNetwork(requested);
+        } catch (error) {
+          return failure(String((error as Error).message));
+        }
+        const where = deployment(network);
+        try {
+          const seller = await readJson<Seller>(network, where.escrow, "get_seller", [address]);
           let gateReason: string | null = null;
           try {
-            gateReason = (await readJson<string>(DISPUTE, "gate_reason", [address])) || null;
+            gateReason = (await readJson<string>(network, where.dispute, "gate_reason", [address])) || null;
           } catch {
             gateReason = null;
           }
-          return text({ ...seller, gate_reason: gateReason });
+          return text({ network, ...seller, gate_reason: gateReason });
         } catch (error) {
-          return failure(`could not read seller ${address}: ${String(error).slice(0, 160)}`);
+          return failure(`could not read seller ${address} on ${network}: ${String(error).slice(0, 160)}`);
         }
       },
     );
@@ -208,45 +231,65 @@ const handler = createMcpHandler(
       {
         title: "Live counts and the frozen evaluation figures",
         description:
-          "Payments, held funds, cases and the bond from chain, beside both evaluation numbers read from the committed results files: " +
-          "17 of 18 on the tuned set and 1 of 3 on the held out set, always together. Never one without the other.",
-        inputSchema: {},
+          "Payments, held funds, cases and the bond from chain for one network, every network the frozen bytes are deployed on, " +
+          "and both evaluation numbers per network read from the committed results files: the tuned set and the held out set, always together.",
+        inputSchema: { network: networkParam },
       },
-      async () => {
-        const out: Record<string, unknown> = { network: ADDRESSES.network, escrow: ESCROW, dispute: DISPUTE, frozen: ADDRESSES.frozen };
+      async ({ network: requested }) => {
+        let network: NetworkName;
         try {
-          out.escrow_stats = await readJson<Record<string, unknown>>(ESCROW, "stats");
-          out.dispute_stats = await readJson<Record<string, unknown>>(DISPUTE, "stats");
+          network = resolveNetwork(requested);
         } catch (error) {
-          out.chain_error = `could not read the chain: ${String(error).slice(0, 120)}`;
+          return failure(String((error as Error).message));
         }
-        // Read, never typed. If the committed measurement cannot be fetched the
-        // number is reported as unavailable rather than recalled from memory.
-        const evaluation: Record<string, unknown> = {};
-        for (const [label, file] of [["tuned_set", "eval/results.json"], ["held_out_set", "eval/results-v2.json"]] as const) {
-          try {
-            const fetched = await fetchText(RECOURSE_RAW + file);
-            if (fetched.status === 200) {
-              const data = JSON.parse(fetched.body) as { accuracy: number; n: number; stability: number; unclear: number; instance: string };
-              evaluation[label] = { accuracy: `${data.accuracy}/${data.n}`, stability: `${data.stability}/${data.n}`, unclear: `${data.unclear}/${data.n}`, instance: data.instance };
-            } else {
-              evaluation[label] = "unavailable";
+        const where = deployment(network);
+        const out: Record<string, unknown> = {
+          network,
+          escrow: where.escrow,
+          dispute: where.dispute,
+          frozen: ADDRESSES.frozen,
+          deployed_on: Object.fromEntries(Object.entries(deployments()).map(([n, d]) => [n, { chain_id: d.chain_id, escrow: d.escrow, dispute: d.dispute }])),
+        };
+        try {
+          out.escrow_stats = await readJson<Record<string, unknown>>(network, where.escrow, "stats");
+          out.dispute_stats = await readJson<Record<string, unknown>>(network, where.dispute, "stats");
+        } catch (error) {
+          out.chain_error = `could not read ${network}: ${String(error).slice(0, 120)}`;
+        }
+        // Read, never typed. One column per network the sets have run on; a
+        // file that cannot be fetched is reported as unavailable rather than
+        // recalled from memory, and nothing is ever merged across networks.
+        const evaluation: Record<string, Record<string, unknown>> = {};
+        for (const n of Object.keys(deployments())) {
+          const suffix = n === "studionet" ? "" : `.${n}`;
+          const column: Record<string, unknown> = {};
+          for (const [label, base] of [["tuned_set", "results"], ["held_out_set", "results-v2"]] as const) {
+            try {
+              const fetched = await fetchText(`${RECOURSE_RAW}eval/${base}${suffix}.json`);
+              if (fetched.status === 200) {
+                const data = JSON.parse(fetched.body) as { accuracy: number; n: number; stability: number; unclear: number; instance: string };
+                column[label] = { accuracy: `${data.accuracy}/${data.n}`, stability: `${data.stability}/${data.n}`, unclear: `${data.unclear}/${data.n}`, instance: data.instance };
+              } else {
+                column[label] = "not measured on this network";
+              }
+            } catch {
+              column[label] = "unavailable";
             }
-          } catch {
-            evaluation[label] = "unavailable";
           }
+          evaluation[n] = column;
         }
         out.evaluation = evaluation;
-        out.reading = "Both numbers are always shown together. The first is the set the question was narrowed against; the second was committed before it could be run and never tuned against.";
+        out.reading = "Both sets are always shown together per network, never one without the other, and never merged across networks. The tuned set is the one the question was narrowed against; the held out set was committed before it could be run and never tuned against.";
         return text(out);
       },
     );
   },
   {
-    serverInfo: { name: "recourse", version: "0.1.0" },
+    serverInfo: { name: "recourse", version: "0.2.0" },
     instructions:
-      "Read only. Recourse is a dispute right for machine payments on GenLayer. Use recourse_explain for the exact calls; " +
-      "paying, disputing and withdrawing are done from the agent's own wallet and are not tools here. Never ask for a private key.",
+      "Read only. Recourse is a dispute right for the un-negotiated machine payment on GenLayer: the same frozen contracts on bradbury " +
+      "(default, it persists) and studionet. Use recourse_explain for the exact calls; paying, disputing and withdrawing are done from " +
+      "the agent's own wallet and are not tools here. Never ask for a private key.",
     verboseLogs: false,
   },
 );

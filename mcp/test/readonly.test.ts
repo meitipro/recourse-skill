@@ -12,12 +12,22 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 
-import { ADDRESSES, client, toCitation, toPid } from "../lib/chain";
+import { ADDRESSES, NETWORKS, client, resolveNetwork, toCitation, toPid } from "../lib/chain";
 
-test("the chain client is created without an account", () => {
-  const instance = client() as unknown as { account?: unknown; localAccount?: unknown };
-  assert.equal(instance.account ?? null, null);
-  assert.equal(instance.localAccount ?? null, null);
+test("every network's chain client is created without an account", () => {
+  for (const network of NETWORKS) {
+    const instance = client(network) as unknown as { account?: unknown; localAccount?: unknown };
+    assert.equal(instance.account ?? null, null, network);
+    assert.equal(instance.localAccount ?? null, null, network);
+  }
+});
+
+test("an unset network resolves to a deployed one, and an undeployed one is refused by name", () => {
+  const resolved = resolveNetwork(undefined);
+  assert.ok(resolved in ADDRESSES.deployments, `default ${resolved} is deployed`);
+  assert.throws(() => resolveNetwork("mainnet"), /unknown network/);
+  const undeployed = NETWORKS.find((n) => !(n in ADDRESSES.deployments));
+  if (undeployed) assert.throws(() => resolveNetwork(undeployed), /not deployed on/);
 });
 
 test("no source file in this server names a write method", () => {
@@ -37,10 +47,16 @@ test("no source file in this server names a write method", () => {
   }
 });
 
-test("addresses are the frozen pair", () => {
-  assert.equal(ADDRESSES.escrow, "0x5125De939F7373eAE741B133FB32B7E9915C8F78");
-  assert.equal(ADDRESSES.dispute, "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4");
+test("the studionet entry is the frozen pair on chain 61999", () => {
+  const studionet = ADDRESSES.deployments.studionet;
+  assert.equal(studionet.chain_id, 61999);
+  assert.equal(studionet.escrow, "0x5125De939F7373eAE741B133FB32B7E9915C8F78");
+  assert.equal(studionet.dispute, "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4");
   assert.equal(ADDRESSES.frozen, true);
+  // Every deployment names a network this server can talk to.
+  for (const network of Object.keys(ADDRESSES.deployments)) {
+    assert.ok((NETWORKS as string[]).includes(network), `${network} has a chain object`);
+  }
 });
 
 test("the server's copy of the addresses is the skill's reference file", () => {

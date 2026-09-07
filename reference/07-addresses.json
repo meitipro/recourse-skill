@@ -1,24 +1,49 @@
 {
-  "network": "studionet",
-  "chain_id": 61999,
-  "rpc": "https://studio.genlayer.com/api",
-  "explorer": "https://explorer-studio.genlayer.com",
-  "escrow": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
-  "dispute": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+  "frozen": true,
+  "frozen_at_commit": "ccc470a",
+  "note": "The freeze is over the contract bytes. One deployment per network, the same two files each time; bradbury is the default because it persists.",
+  "default_network": "bradbury",
+  "deployments": {
+    "studionet": {
+      "chain_id": 61999,
+      "rpc": "https://studio.genlayer.com/api",
+      "explorer": "https://explorer-studio.genlayer.com",
+      "escrow": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "dispute": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+      "rate_limit_per_minute": 30,
+      "faucet": "sim_fundAccount over the RPC, through the SDK's fund_account"
+    }
+  },
   "bond_wei": "1000000000000000000",
   "bond_gen": 1,
   "window_seconds": 300,
   "dispute_seconds": 3600,
-  "frozen": true,
-  "frozen_at_commit": "ccc470a",
-  "status_codes": { "0": "open", "1": "withdrawn", "2": "disputed", "3": "resolved" },
-  "verdict_codes": { "0": "pending", "1": "honored", "2": "not_honored", "3": "unclear" },
-  "settlement": {
-    "honored": { "payment": "seller", "bond": "seller" },
-    "not_honored": { "payment": "buyer", "bond": "buyer" },
-    "unclear": { "payment": "seller", "bond": "buyer" }
+  "status_codes": {
+    "0": "open",
+    "1": "withdrawn",
+    "2": "disputed",
+    "3": "resolved"
   },
-  "rate_limit_per_minute": 30,
+  "verdict_codes": {
+    "0": "pending",
+    "1": "honored",
+    "2": "not_honored",
+    "3": "unclear"
+  },
+  "settlement": {
+    "honored": {
+      "payment": "seller",
+      "bond": "seller"
+    },
+    "not_honored": {
+      "payment": "buyer",
+      "bond": "buyer"
+    },
+    "unclear": {
+      "payment": "seller",
+      "bond": "buyer"
+    }
+  },
   "linter": "https://recourse-linter.vercel.app/api/lint",
   "mcp": "https://recourse-mcp.vercel.app/api/mcp",
   "repository": "https://github.com/meitipro/Recourse",
