@@ -8,9 +8,9 @@
  * rather than against this comment. The MCP advises; the agent's own wallet
  * acts.
  *
- * The same frozen bytes are deployed once per network and addresses.json
- * carries every deployment. Bradbury is the default because it persists; a
- * network with no entry yet is refused by name rather than guessed at.
+ * addresses.json carries every deployment of the frozen bytes, keyed by
+ * network. studionet is the only one; a network with no entry is refused by
+ * name rather than guessed at.
  *
  * genlayer-js builds its transport with retryCount 0, so one dropped
  * connection fails the call. Studio drops connections, so every read retries.
@@ -38,7 +38,7 @@ export function resolveNetwork(requested?: string | null): NetworkName {
   const have = deployments();
   if (requested) {
     if (!(requested in CHAINS)) throw new Error(`unknown network ${requested}; known: ${NETWORKS.join(", ")}`);
-    if (!have[requested]) throw new Error(`the frozen contracts are not deployed on ${requested} yet; deployed: ${Object.keys(have).join(", ")}`);
+    if (!have[requested]) throw new Error(`the frozen contracts have never been deployed on ${requested}; the only deployment: ${Object.keys(have).join(", ")}`);
     return requested as NetworkName;
   }
   const preferred = addresses.default_network as NetworkName;

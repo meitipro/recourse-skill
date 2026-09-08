@@ -27,7 +27,7 @@ test("an unset network resolves to a deployed one, and an undeployed one is refu
   assert.ok(resolved in ADDRESSES.deployments, `default ${resolved} is deployed`);
   assert.throws(() => resolveNetwork("mainnet"), /unknown network/);
   const undeployed = NETWORKS.find((n) => !(n in ADDRESSES.deployments));
-  if (undeployed) assert.throws(() => resolveNetwork(undeployed), /not deployed on/);
+  if (undeployed) assert.throws(() => resolveNetwork(undeployed), /never been deployed on/);
 });
 
 test("no source file in this server names a write method", () => {

@@ -27,9 +27,9 @@ export const maxDuration = 60;
  * test/readonly.test.ts asserts that against the object rather than trusting
  * this comment.
  *
- * The same frozen bytes are deployed once per network. Every chain reading
- * tool takes an optional `network`; unset, it is bradbury when bradbury has a
- * deployment, because bradbury persists, else whatever does.
+ * Every chain reading tool takes an optional `network`; unset, it is the
+ * default in addresses.json, which is studionet, the only deployment. A
+ * network without an entry there is refused by name.
  */
 
 const SKILL_RAW = "https://raw.githubusercontent.com/meitipro/recourse-skill/main/reference/";
@@ -86,7 +86,7 @@ function failure(message: string) {
 const networkParam = z
   .enum(NETWORKS as [NetworkName, ...NetworkName[]])
   .optional()
-  .describe("studionet or bradbury. Unset: bradbury when deployed there, because it persists");
+  .describe("the network to read. Unset: studionet, the only deployment. A network with no deployment is refused by name");
 
 type Payment = {
   pid: string; buyer: string; seller: string; amount: string; bond: string;
@@ -287,8 +287,8 @@ const handler = createMcpHandler(
   {
     serverInfo: { name: "recourse", version: "0.2.0" },
     instructions:
-      "Read only. Recourse is a dispute right for the un-negotiated machine payment on GenLayer: the same frozen contracts on bradbury " +
-      "(default, it persists) and studionet. Use recourse_explain for the exact calls; paying, disputing and withdrawing are done from " +
+      "Read only. Recourse is a dispute right for the un-negotiated machine payment on GenLayer: two frozen contracts deployed on " +
+      "studionet, chain 61999. Use recourse_explain for the exact calls; paying, disputing and withdrawing are done from " +
       "the agent's own wallet and are not tools here. Never ask for a private key.",
     verboseLogs: false,
   },

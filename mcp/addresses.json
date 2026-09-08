@@ -1,8 +1,8 @@
 {
   "frozen": true,
   "frozen_at_commit": "ccc470a",
-  "note": "The freeze is over the contract bytes. One deployment per network, the same two files each time; bradbury is the default because it persists.",
-  "default_network": "bradbury",
+  "note": "The freeze is over the contract bytes, not over a network. studionet is the only deployment; the map supports more because the same two files could be deployed once elsewhere, and a network with no entry is refused by name.",
+  "default_network": "studionet",
   "deployments": {
     "studionet": {
       "chain_id": 61999,
