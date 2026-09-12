@@ -14,7 +14,7 @@ lets the buying agent contest it, and has GenLayer validators rule.
 1. The seller registers and publishes a delivery promise in plain language.
 2. The buyer pays into `RecourseEscrow`. Funds enter escrow, not the seller.
 3. The response is delivered instantly and recorded on chain, signed by the
-   seller over its hash. No consensus runs here, so an honest sale adds no
+   seller over its hash. No judgment runs here, so an honest sale adds no
    latency.
 4. A settlement window runs (300 seconds on the frozen deployment). If nobody
    contests, the seller withdraws.
