@@ -16,8 +16,15 @@
  * connection fails the call. Studio drops connections, so every read retries.
  */
 
-import { createClient } from "genlayer-js";
-import { studioDevnet, studionet, testnetBradbury } from "genlayer-js/chains";
+// Two lines of the SDK, one per consensus version. 2.0.0-rc.1 reads Studio
+// Next, which runs consensus v0.6, and fails every read on studionet with
+// "Missing or invalid parameters". 1.1.8, the line this server shipped with,
+// reads studionet and knows no chain 61997. Each network is read by the line
+// that reads it, which was measured, not assumed, on 14 September.
+import { createClient as createClientV06 } from "genlayer-js";
+import { studioDevnet } from "genlayer-js/chains";
+import { createClient as createClientV05 } from "genlayer-js-v1";
+import { studionet, testnetBradbury } from "genlayer-js-v1/chains";
 
 import addresses from "../addresses.json";
 
@@ -64,13 +71,22 @@ export function deployment(network: NetworkName): Deployment {
   return entry;
 }
 
-const clients = new Map<NetworkName, ReturnType<typeof createClient>>();
+/** The one method the tools call, which both lines of the SDK provide in the same shape. */
+type Reader = {
+  readContract: (options: { address: `0x${string}`; functionName: string; args: unknown[] }) => Promise<unknown>;
+};
 
-/** One client per network. No account, ever. */
-export function client(network: NetworkName) {
+const clients = new Map<NetworkName, Reader>();
+
+/** One client per network, from the line of the SDK that reads it. No account, ever. */
+export function client(network: NetworkName): Reader {
   let cached = clients.get(network);
   if (!cached) {
-    cached = createClient({ chain: CHAINS[network] });
+    cached = (
+      network === "studio-next"
+        ? createClientV06({ chain: STUDIO_NEXT })
+        : createClientV05({ chain: CHAINS[network] as typeof studionet })
+    ) as unknown as Reader;
     clients.set(network, cached);
   }
   return cached;
