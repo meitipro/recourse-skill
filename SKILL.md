@@ -11,10 +11,17 @@ if the buyer contests, GenLayer validators rule on three strings and a timing
 block. The verdict moves the money. No human is in the loop and neither party
 picks the judge.
 
-Everything this skill does runs against one frozen pair of contracts on
-studionet. The addresses, the bond and the window are in
-`reference/07-addresses.json`, which is JSON so you can parse it rather than
-read it.
+Everything this skill does runs against the contracts on studionet unless you
+name another network. The same logic, the same prompt and the same strings
+also run on Studio Next, ported to the runtime that network loads, with a
+published diff that touches only API names. The addresses, the bond and the
+window of both are in `reference/07-addresses.json`, which is JSON so you can
+parse it rather than read it.
+
+On Studio Next a dispute is judged and its verdict written, and the
+settlement that verdict implies does not pay out: consensus v0.6 funds a value
+transfer only from the top of a transaction, and the refund sits two messages
+down. A buyer who needs its money back files on studionet.
 
 ## Where to go
 

@@ -6,9 +6,15 @@ payments, and a read only MCP server that answers the questions the skill
 raises.
 
 The contracts it points at are frozen at their deployed bytes on GenLayer's
-studionet. Every address, bound and code table lives in
+studionet, and run on Studio Next as the same logic, the same prompt and the
+same strings, with a published diff that touches only API names. Every
+address, bound and code table lives in
 [`reference/07-addresses.json`](reference/07-addresses.json), which is JSON so
-that a tool can parse it rather than read it.
+that a tool can parse it rather than read it. On Studio Next a dispute is
+judged and its settlement does not pay out, because consensus v0.6 funds a
+value transfer only from the top of a transaction; the Recourse README's
+[Settlement on Studio Next](https://github.com/meitipro/Recourse#settlement-on-studio-next)
+has the transactions.
 
 ## Install
 
