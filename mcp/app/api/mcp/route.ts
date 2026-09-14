@@ -28,8 +28,8 @@ export const maxDuration = 60;
  * this comment.
  *
  * Every chain reading tool takes an optional `network`; unset, it is the
- * default in addresses.json, which is studionet, the only deployment. A
- * network without an entry there is refused by name.
+ * default in addresses.json, which is studionet; studio-next is the other
+ * deployment. A network without an entry there is refused by name.
  */
 
 const SKILL_RAW = "https://raw.githubusercontent.com/meitipro/recourse-skill/main/reference/";
@@ -86,7 +86,7 @@ function failure(message: string) {
 const networkParam = z
   .enum(NETWORKS as [NetworkName, ...NetworkName[]])
   .optional()
-  .describe("the network to read. Unset: studionet, the only deployment. A network with no deployment is refused by name");
+  .describe("the network to read: studionet or studio-next. Unset: studionet. A network with no deployment is refused by name");
 
 type Payment = {
   pid: string; buyer: string; seller: string; amount: string; bond: string;
@@ -287,8 +287,8 @@ const handler = createMcpHandler(
   {
     serverInfo: { name: "recourse", version: "0.2.0" },
     instructions:
-      "Read only. Recourse is a dispute right for the un-negotiated machine payment on GenLayer: two frozen contracts deployed on " +
-      "studionet, chain 61999. Use recourse_explain for the exact calls; paying, disputing and withdrawing are done from " +
+      "Read only. Recourse is a dispute right for the un-negotiated machine payment on GenLayer: two contracts deployed on " +
+      "studionet, chain 61999, and on Studio Next, chain 61997. Use recourse_explain for the exact calls; paying, disputing and withdrawing are done from " +
       "the agent's own wallet and are not tools here. Never ask for a private key.",
     verboseLogs: false,
   },

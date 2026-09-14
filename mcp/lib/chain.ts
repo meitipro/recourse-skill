@@ -8,16 +8,16 @@
  * rather than against this comment. The MCP advises; the agent's own wallet
  * acts.
  *
- * addresses.json carries every deployment of the frozen bytes, keyed by
- * network. studionet is the only one; a network with no entry is refused by
- * name rather than guessed at.
+ * addresses.json carries every deployment, keyed by network: studionet runs
+ * the frozen pair and studio-next the ported one. A network with no entry is
+ * refused by name rather than guessed at.
  *
  * genlayer-js builds its transport with retryCount 0, so one dropped
  * connection fails the call. Studio drops connections, so every read retries.
  */
 
 import { createClient } from "genlayer-js";
-import { studionet, testnetBradbury } from "genlayer-js/chains";
+import { studioDevnet, studionet, testnetBradbury } from "genlayer-js/chains";
 
 import addresses from "../addresses.json";
 
@@ -25,7 +25,17 @@ export const ADDRESSES = addresses;
 
 type Deployment = { chain_id: number; rpc: string; explorer: string; escrow: string; dispute: string };
 
-const CHAINS = { studionet, bradbury: testnetBradbury } as const;
+/**
+ * Studio Next is the SDK's studioDevnet: studio-next.genlayer.com and
+ * studio-dev.genlayer.com are one network, chain 61997, and the RPC is pinned
+ * to the name the organisers use.
+ */
+const STUDIO_NEXT = {
+  ...studioDevnet,
+  rpcUrls: { default: { http: ["https://studio-next.genlayer.com/api"] } },
+} as typeof studioDevnet;
+
+const CHAINS = { studionet, "studio-next": STUDIO_NEXT, bradbury: testnetBradbury } as const;
 export type NetworkName = keyof typeof CHAINS;
 export const NETWORKS = Object.keys(CHAINS) as NetworkName[];
 
@@ -38,7 +48,7 @@ export function resolveNetwork(requested?: string | null): NetworkName {
   const have = deployments();
   if (requested) {
     if (!(requested in CHAINS)) throw new Error(`unknown network ${requested}; known: ${NETWORKS.join(", ")}`);
-    if (!have[requested]) throw new Error(`the frozen contracts have never been deployed on ${requested}; the only deployment: ${Object.keys(have).join(", ")}`);
+    if (!have[requested]) throw new Error(`the contracts have never been deployed on ${requested}; the deployments: ${Object.keys(have).join(", ")}`);
     return requested as NetworkName;
   }
   const preferred = addresses.default_network as NetworkName;
