@@ -4,7 +4,7 @@ A read only MCP server for [Recourse](https://github.com/meitipro/Recourse),
 served over Streamable HTTP from Vercel.
 
 ```
-https://recourse-mcp.vercel.app/api/mcp
+https://recourse-mcp-eight.vercel.app/api/mcp
 ```
 
 **The MCP advises. The agent's own wallet acts.** That sentence is the

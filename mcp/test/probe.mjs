@@ -3,7 +3,7 @@
  * list the tools, call each of the five, print what came back.
  *
  *     node test/probe.mjs                          # local dev server
- *     node test/probe.mjs https://recourse-mcp.vercel.app/api/mcp
+ *     node test/probe.mjs https://recourse-mcp-eight.vercel.app/api/mcp
  *
  * Not a unit test. This is the thing that proves the deployed URL answers.
  */

@@ -45,7 +45,7 @@
     }
   },
   "linter": "https://recourse-linter.vercel.app/api/lint",
-  "mcp": "https://recourse-mcp.vercel.app/api/mcp",
+  "mcp": "https://recourse-mcp-eight.vercel.app/api/mcp",
   "repository": "https://github.com/meitipro/Recourse",
   "skill": "https://github.com/meitipro/recourse-skill"
 }

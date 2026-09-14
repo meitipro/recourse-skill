@@ -24,7 +24,7 @@ Or drop the skill in by hand: copy `SKILL.md` and `reference/` into
 no install; add it to any MCP client as Streamable HTTP:
 
 ```json
-{ "mcpServers": { "recourse": { "type": "http", "url": "https://recourse-mcp.vercel.app/api/mcp" } } }
+{ "mcpServers": { "recourse": { "type": "http", "url": "https://recourse-mcp-eight.vercel.app/api/mcp" } } }
 ```
 
 ## What is in here

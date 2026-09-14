@@ -11,7 +11,7 @@
   "mcpServers": {
     "recourse": {
       "type": "http",
-      "url": "https://recourse-mcp.vercel.app/api/mcp"
+      "url": "https://recourse-mcp-eight.vercel.app/api/mcp"
     }
   }
 }
