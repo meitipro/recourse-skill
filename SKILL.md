@@ -11,17 +11,20 @@ if the buyer contests, GenLayer validators rule on three strings and a timing
 block. The verdict moves the money. No human is in the loop and neither party
 picks the judge.
 
-Everything this skill does runs against the contracts on studionet unless you
-name another network. The same logic, the same prompt and the same strings
-also run on Studio Next, ported to the runtime that network loads, with a
-published diff that touches only API names. The addresses, the bond and the
-window of both are in `reference/07-addresses.json`, which is JSON so you can
-parse it rather than read it.
+The MCP server reads Studio Next, chain 61997, unless you name studionet, and
+so does the Recourse site. The same logic, the same prompt and the same
+strings run on studionet, chain 61999, where they were first frozen, with a
+published diff between the two pairs that touches only API names. The
+addresses, the bond and the window of both are in
+`reference/07-addresses.json`, which is JSON so you can parse it rather than
+read it.
 
 On Studio Next a dispute is judged and its verdict written, and the
 settlement that verdict implies does not pay out: consensus v0.6 funds a value
 transfer only from the top of a transaction, and the refund sits two messages
-down. A buyer who needs its money back files on studionet.
+down. So the calls in the reference files that move money target studionet,
+where the settlement pays out, and a buyer who needs its money back files
+there.
 
 ## Where to go
 

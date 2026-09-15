@@ -28,7 +28,7 @@ export const maxDuration = 60;
  * this comment.
  *
  * Every chain reading tool takes an optional `network`; unset, it is the
- * default in addresses.json, which is studionet; studio-next is the other
+ * default in addresses.json, which is studio-next; studionet is the other
  * deployment. A network without an entry there is refused by name.
  */
 
@@ -86,7 +86,7 @@ function failure(message: string) {
 const networkParam = z
   .enum(NETWORKS as [NetworkName, ...NetworkName[]])
   .optional()
-  .describe("the network to read: studionet or studio-next. Unset: studionet. A network with no deployment is refused by name");
+  .describe("the network to read: studio-next or studionet. Unset: studio-next. A network with no deployment is refused by name");
 
 type Payment = {
   pid: string; buyer: string; seller: string; amount: string; bond: string;
